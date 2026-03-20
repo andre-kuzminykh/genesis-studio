@@ -9,7 +9,7 @@ class BotSettings(BaseSettings):
     telegram_bot_token: str = ""
     backend_url: str = "http://localhost:8000"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
 
 bot_settings = BotSettings()
