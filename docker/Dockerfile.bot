@@ -5,4 +5,4 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir -e ".[dev]"
 COPY bot/ bot/
 
-CMD ["python", "-m", "bot.main"]
+CMD ["python", "-m", "bot.app"]

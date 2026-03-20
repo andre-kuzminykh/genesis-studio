@@ -1,18 +1,20 @@
 """FastAPI application entry point for Genesis Studio backend.
 
-Product: P001 — PRD-first platform for bot/backend generation and GitHub delivery
+## Трассируемость
+Feature: P001 — PRD-first платформа
+
+## Бизнес-контекст
+Точка входа backend-сервиса. Подключает все роутеры и обработчики ошибок.
 """
-from fastapi import FastAPI
+from backend.app.core.loader import app
+from backend.app.api.v1.include_router import include_routers
+from backend.app.api.v1.exception_handlers import register_exception_handlers
 
-from backend.app.api.v1.router import api_v1_router
+# Ensure all models are imported for Alembic
+import backend.app.model  # noqa: F401
 
-app = FastAPI(
-    title="Genesis Studio",
-    description="PRD-first platform for bot/backend generation and GitHub delivery",
-    version="0.1.0",
-)
-
-app.include_router(api_v1_router)
+include_routers(app)
+register_exception_handlers(app)
 
 
 @app.get("/health")

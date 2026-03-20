@@ -1,5 +1,8 @@
-"""Test configuration and fixtures for Genesis Studio backend tests."""
-import asyncio
+"""Global test configuration and fixtures for Genesis Studio backend tests.
+
+## Трассируемость
+Feature: P001 — PRD-first платформа
+"""
 import uuid
 from unittest.mock import AsyncMock
 

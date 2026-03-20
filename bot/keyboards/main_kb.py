@@ -1,6 +1,7 @@
 """Main keyboard layouts for the Genesis Studio bot.
 
-Bot = UI only layer.
+## Трассируемость
+Feature: P001 — PRD-first платформа
 """
 from aiogram.types import (
     ReplyKeyboardMarkup,
@@ -9,12 +10,17 @@ from aiogram.types import (
     InlineKeyboardButton,
 )
 
+from bot.core.vocab import Vocab
+
 
 def main_menu_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Create Product"), KeyboardButton(text="My Products")],
-            [KeyboardButton(text="Help")],
+            [
+                KeyboardButton(text=Vocab.BTN_CREATE_PRODUCT),
+                KeyboardButton(text=Vocab.BTN_MY_PRODUCTS),
+            ],
+            [KeyboardButton(text=Vocab.BTN_HELP)],
         ],
         resize_keyboard=True,
     )
@@ -23,15 +29,15 @@ def main_menu_keyboard() -> ReplyKeyboardMarkup:
 def feature_actions_keyboard(feature_id: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Generate PRD Draft", callback_data=f"prd_draft:{feature_id}")],
-            [InlineKeyboardButton(text="Approve Stories", callback_data=f"approve_stories:{feature_id}")],
-            [InlineKeyboardButton(text="Generate UX Preview", callback_data=f"gen_ux:{feature_id}")],
-            [InlineKeyboardButton(text="Generate Use Cases", callback_data=f"gen_uc:{feature_id}")],
-            [InlineKeyboardButton(text="Generate Requirements", callback_data=f"gen_req:{feature_id}")],
-            [InlineKeyboardButton(text="Generate Tests", callback_data=f"gen_tests:{feature_id}")],
-            [InlineKeyboardButton(text="Generate Code", callback_data=f"gen_code:{feature_id}")],
-            [InlineKeyboardButton(text="Push to GitHub", callback_data=f"push_gh:{feature_id}")],
-            [InlineKeyboardButton(text="Deploy Locally", callback_data=f"deploy:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_GEN_PRD, callback_data=f"prd_draft:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_APPROVE_STORIES, callback_data=f"approve_stories:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_GEN_UX, callback_data=f"gen_ux:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_GEN_UC, callback_data=f"gen_uc:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_GEN_REQ, callback_data=f"gen_req:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_GEN_TESTS, callback_data=f"gen_tests:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_GEN_CODE, callback_data=f"gen_code:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_PUSH_GH, callback_data=f"push_gh:{feature_id}")],
+            [InlineKeyboardButton(text=Vocab.BTN_DEPLOY, callback_data=f"deploy:{feature_id}")],
         ]
     )
 

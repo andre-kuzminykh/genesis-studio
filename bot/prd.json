@@ -1,0 +1,122 @@
+{
+  "product_name": "Genesis Studio Bot",
+  "product_overview": "Telegram bot UI layer — all data via backend API, no direct DB access",
+  "features": [
+    {
+      "feature_id": "F001",
+      "general_info": {
+        "name": "Product Creation & Discovery",
+        "overview": "Bot widgets for creating products and conducting discovery interview via Telegram"
+      },
+      "goal_and_context": {
+        "business_goal": "Provide Telegram UI for product creation and discovery flow",
+        "user_problem": "User needs a simple conversational interface to describe product ideas"
+      },
+      "actors_and_roles": {
+        "primary_user": "Telegram user",
+        "secondary_user": null,
+        "system_service": "Backend API (product-factory-service)"
+      },
+      "business_rules": [
+        {"rule_id": "BR001", "description": "Bot must not access database directly"},
+        {"rule_id": "BR002", "description": "All data operations go through backend HTTP API"},
+        {"rule_id": "BR003", "description": "Idea text must be at least 10 characters"}
+      ],
+      "acceptance_criteria": [
+        {
+          "scenario_id": "SC001",
+          "user_story": "As a Telegram user, I want to tap 'Create Product' and describe my idea",
+          "bdd": {
+            "given": "User is in the main menu",
+            "and_preconditions": [],
+            "when": "User taps Create Product and enters idea text",
+            "then": "Bot calls backend API and shows first discovery question",
+            "and_postconditions": ["FSM state = answering_discovery"]
+          }
+        },
+        {
+          "scenario_id": "SC002",
+          "user_story": "As a Telegram user, I want to answer discovery questions until complete",
+          "bdd": {
+            "given": "User is in answering_discovery state",
+            "and_preconditions": ["Product has pending questions"],
+            "when": "User submits answer",
+            "then": "Bot shows next question or marks discovery complete",
+            "and_postconditions": ["Answer submitted to backend"]
+          }
+        }
+      ],
+      "non_functional_requirements": [
+        {"nfr_id": "NFR001", "type": "architecture", "description": "Bot = UI only, no DB access"},
+        {"nfr_id": "NFR002", "type": "usability", "description": "Bot must handle errors gracefully with user-friendly messages"}
+      ],
+      "test_cases": [
+        {
+          "test_id": "T001",
+          "scenario_id": "SC001",
+          "setup": "Mock message with text",
+          "action": "Call create_product_trigger.run and create_product_code.run",
+          "assertion": "Returns correct answer_name based on input",
+          "examples": [
+            {"input": {"text": "short"}, "expected": {"answer_name": "idea_too_short"}},
+            {"input": {"text": "A Telegram bot for fitness tracking with daily workouts"}, "expected": {"answer_name": "product_created_with_questions"}}
+          ]
+        },
+        {
+          "test_id": "T002",
+          "scenario_id": "SC001",
+          "setup": "BackendAPIClient instance",
+          "action": "Check client has correct base_url",
+          "assertion": "base_url starts with http and no trailing slash",
+          "examples": []
+        }
+      ]
+    },
+    {
+      "feature_id": "F002",
+      "general_info": {
+        "name": "Feature Actions",
+        "overview": "Telegram inline keyboard actions for feature-level PRD workflow steps"
+      },
+      "goal_and_context": {
+        "business_goal": "Provide step-by-step Telegram UI for the full PRD-to-code pipeline",
+        "user_problem": "User needs guided actions for each stage of feature development"
+      },
+      "actors_and_roles": {
+        "primary_user": "Telegram user",
+        "secondary_user": null,
+        "system_service": "Backend API"
+      },
+      "business_rules": [
+        {"rule_id": "BR004", "description": "Each action button maps to a backend API call"},
+        {"rule_id": "BR005", "description": "Feature actions are shown as inline keyboard buttons"}
+      ],
+      "acceptance_criteria": [
+        {
+          "scenario_id": "SC003",
+          "user_story": "As a Telegram user, I want to tap action buttons to progress through PRD workflow",
+          "bdd": {
+            "given": "User is viewing a feature",
+            "and_preconditions": ["Feature exists in backend"],
+            "when": "User taps an action button (e.g., Generate PRD Draft)",
+            "then": "Bot calls backend API and shows result",
+            "and_postconditions": ["Feature status updated in backend"]
+          }
+        }
+      ],
+      "non_functional_requirements": [
+        {"nfr_id": "NFR003", "type": "usability", "description": "Long text responses must be truncated to 4000 chars (Telegram limit)"}
+      ],
+      "test_cases": [
+        {
+          "test_id": "T003",
+          "scenario_id": "SC003",
+          "setup": "Mock callback query and API client",
+          "action": "Trigger callback handler",
+          "assertion": "Backend API called and response shown",
+          "examples": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "product_name": "Genesis Studio Backend",
+  "product_overview": "Backend service for PRD-first platform — data, business logic, integrations",
+  "features": [
+    {
+      "feature_id": "F001",
+      "general_info": {
+        "name": "Product Creation & Discovery",
+        "overview": "Create products from text ideas and conduct guided discovery interview"
+      },
+      "goal_and_context": {
+        "business_goal": "Allow founders to describe product ideas in natural language and transform them into structured product definitions",
+        "user_problem": "Product ideas are usually unstructured; no system guides the founder through systematic discovery"
+      },
+      "actors_and_roles": {
+        "primary_user": "Founder / Product Owner",
+        "secondary_user": null,
+        "system_service": "Discovery Service"
+      },
+      "business_rules": [
+        {"rule_id": "BR001", "description": "Product idea must be at least 10 characters"},
+        {"rule_id": "BR002", "description": "Discovery interview consists of 6 sequential questions"},
+        {"rule_id": "BR003", "description": "Discovery is complete when all questions are answered"}
+      ],
+      "acceptance_criteria": [
+        {
+          "scenario_id": "SC001",
+          "user_story": "As a founder, I want to create a product from a text idea so that the system starts discovery",
+          "bdd": {
+            "given": "User is authenticated",
+            "and_preconditions": [],
+            "when": "User submits product idea text",
+            "then": "System creates product draft and returns clarification questions",
+            "and_postconditions": ["Product status = discovery_in_progress"]
+          }
+        },
+        {
+          "scenario_id": "SC002",
+          "user_story": "As a founder, I want to answer discovery questions so that the system builds a complete product brief",
+          "bdd": {
+            "given": "Product exists in discovery_in_progress state",
+            "and_preconditions": ["At least one pending question exists"],
+            "when": "User submits answer to current question",
+            "then": "System stores answer and returns next questions or marks discovery complete",
+            "and_postconditions": ["InterviewResponse saved", "Product updated if complete"]
+          }
+        }
+      ],
+      "non_functional_requirements": [
+        {"nfr_id": "NFR001", "type": "performance", "description": "First response after idea submission ≤ 10 seconds"},
+        {"nfr_id": "NFR002", "type": "reliability", "description": "Discovery inputs must be versioned and auditable"},
+        {"nfr_id": "NFR003", "type": "reliability", "description": "System must not lose intermediate interview context on session break"}
+      ],
+      "test_cases": [
+        {
+          "test_id": "T001",
+          "scenario_id": "SC001",
+          "setup": "Mock session and ProductRepository",
+          "action": "Call DiscoveryService.create_product with valid idea text",
+          "assertion": "Result contains product, follow_up_questions, is_complete=False",
+          "examples": [
+            {"input": {"idea_text": "A Telegram bot for fitness tracking"}, "expected": {"is_complete": false, "questions_count": 3}}
+          ]
+        },
+        {
+          "test_id": "T002",
+          "scenario_id": "SC001",
+          "setup": "Mock session and ProductRepository",
+          "action": "Call DiscoveryService.create_product and check questions match DISCOVERY_QUESTIONS[:3]",
+          "assertion": "follow_up_questions equals first 3 discovery questions",
+          "examples": [
+            {"input": {"idea_text": "A bot for scheduling meetings"}, "expected": {"questions_match": true}}
+          ]
+        },
+        {
+          "test_id": "T003",
+          "scenario_id": "SC002",
+          "setup": "Existing discovery questions defined",
+          "action": "Verify DISCOVERY_QUESTIONS are well-formed",
+          "assertion": "At least 3 questions, each > 10 characters",
+          "examples": []
+        }
+      ]
+    },
+    {
+      "feature_id": "F002",
+      "general_info": {
+        "name": "Feature Map Builder",
+        "overview": "Generate and approve feature maps from discovery data"
+      },
+      "goal_and_context": {
+        "business_goal": "Transform discovery data into a structured feature map that users can review and approve",
+        "user_problem": "Features are unclear and unorganized after initial idea description"
+      },
+      "actors_and_roles": {
+        "primary_user": "Founder / Product Owner",
+        "secondary_user": null,
+        "system_service": "Discovery Service"
+      },
+      "business_rules": [
+        {"rule_id": "BR004", "description": "Feature map must be generated from discovery data"},
+        {"rule_id": "BR005", "description": "User can add, remove, rename, and reorder features"},
+        {"rule_id": "BR006", "description": "Approved feature map is stored as versioned artifact"}
+      ],
+      "acceptance_criteria": [
+        {
+          "scenario_id": "SC003",
+          "user_story": "As a founder, I want to see a generated feature map so that I can review and approve it",
+          "bdd": {
+            "given": "Product has completed discovery",
+            "and_preconditions": [],
+            "when": "User requests feature map generation",
+            "then": "System generates initial feature list from discovery data",
+            "and_postconditions": ["Features created in DB"]
+          }
+        },
+        {
+          "scenario_id": "SC004",
+          "user_story": "As a founder, I want to approve the feature map so that PRD generation can begin",
+          "bdd": {
+            "given": "Feature map has been generated",
+            "and_preconditions": [],
+            "when": "User approves the feature map",
+            "then": "Product status becomes feature_map_approved",
+            "and_postconditions": ["Product status = feature_map_approved"]
+          }
+        }
+      ],
+      "non_functional_requirements": [
+        {"nfr_id": "NFR004", "type": "usability", "description": "Feature map changes must preserve history of previous variants"},
+        {"nfr_id": "NFR005", "type": "usability", "description": "Feature map UI must be understandable without internal architecture knowledge"}
+      ],
+      "test_cases": [
+        {
+          "test_id": "T004",
+          "scenario_id": "SC003",
+          "setup": "Mock product with completed discovery",
+          "action": "Call generate_feature_map",
+          "assertion": "Returns list of Feature objects",
+          "examples": []
+        },
+        {
+          "test_id": "T005",
+          "scenario_id": "SC004",
+          "setup": "Mock product with features",
+          "action": "Call approve_feature_map",
+          "assertion": "Product status updated to feature_map_approved",
+          "examples": []
+        }
+      ]
+    },
+    {
+      "feature_id": "F003",
+      "general_info": {
+        "name": "Feature PRD Generator",
+        "overview": "Generate feature-level PRD drafts with user stories and business rules"
+      },
+      "goal_and_context": {
+        "business_goal": "Create structured, canonical PRD documents for each feature",
+        "user_problem": "Feature specifications are incomplete and inconsistently formatted"
+      },
+      "actors_and_roles": {
+        "primary_user": "Founder / Product Owner",
+        "secondary_user": null,
+        "system_service": "PRD Service"
+      },
+      "business_rules": [
+        {"rule_id": "BR007", "description": "PRD must contain feature_id, acceptance_criteria with BDD scenarios, test_cases"},
+        {"rule_id": "BR008", "description": "Each PRD version is an immutable snapshot"}
+      ],
+      "acceptance_criteria": [
+        {
+          "scenario_id": "SC005",
+          "user_story": "As a founder, I want the system to generate a PRD draft for a feature",
+          "bdd": {
+            "given": "Feature exists with approved feature map",
+            "and_preconditions": [],
+            "when": "User requests PRD draft generation",
+            "then": "System creates PRD version with user stories and business rules",
+            "and_postconditions": ["Feature status = prd_draft_created"]
+          }
+        }
+      ],
+      "non_functional_requirements": [
+        {"nfr_id": "NFR006", "type": "consistency", "description": "PRD draft must be uniformly structured across all features"},
+        {"nfr_id": "NFR007", "type": "reliability", "description": "Each PRD version must be a separately stored snapshot artifact"}
+      ],
+      "test_cases": [
+        {
+          "test_id": "T006",
+          "scenario_id": "SC005",
+          "setup": "Mock feature with valid feature_id",
+          "action": "Call PRDService.generate_prd_draft",
+          "assertion": "Result contains prd_version and user_stories",
+          "examples": []
+        },
+        {
+          "test_id": "T007",
+          "scenario_id": "SC005",
+          "setup": "No feature exists",
+          "action": "Call PRDService.generate_prd_draft with invalid id",
+          "assertion": "Raises ValueError",
+          "examples": []
+        }
+      ]
+    }
+  ]
+}
