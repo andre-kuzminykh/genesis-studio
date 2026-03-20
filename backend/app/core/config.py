@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     llm_api_key: str = ""
     llm_model: str = "gpt-4o"
 
+    # Telegram
+    telegram_bot_token: str = ""
+
+    # OpenAI
+    openai_api_key: str = ""
+
     # Backend
     backend_url: str = "http://localhost:8000"
 
