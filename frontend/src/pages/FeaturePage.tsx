@@ -28,16 +28,16 @@ const PIPELINE_STEPS = [
 ]
 
 const ACTIONS = [
-  { key: 'prd', icon: '\u{1F4DD}', title: 'Generate PRD Draft', desc: 'Create feature PRD from discovery' },
-  { key: 'stories', icon: '\u{1F464}', title: 'Approve Stories', desc: 'Review and approve user stories' },
-  { key: 'ux', icon: '\u{1F3A8}', title: 'Generate UX Preview', desc: 'Telegram UX & Mermaid diagrams' },
-  { key: 'usecases', icon: '\u{1F4CB}', title: 'Generate Use Cases', desc: 'Given / When / Then scenarios' },
-  { key: 'requirements', icon: '\u{2699}\u{FE0F}', title: 'Generate Requirements', desc: 'Derive FR & NFR' },
-  { key: 'tests', icon: '\u{1F9EA}', title: 'Generate Tests', desc: 'Unit, integration, e2e tests' },
-  { key: 'code', icon: '\u{1F4BB}', title: 'Generate Code', desc: 'Backend & bot code generation' },
-  { key: 'github', icon: '\u{1F680}', title: 'Push to GitHub', desc: 'Push generated code to repo' },
-  { key: 'deploy', icon: '\u{26A1}', title: 'Deploy Locally', desc: 'Deploy backend & bot locally' },
-  { key: 'traceability', icon: '\u{1F517}', title: 'Traceability', desc: 'Full traceability graph' },
+  { key: 'prd', icon: '\u{1F4DD}', title: 'Generate PRD Draft', desc: 'Create feature PRD from discovery', confirm: false },
+  { key: 'stories', icon: '\u{1F464}', title: 'Approve Stories', desc: 'Review and approve user stories', confirm: false },
+  { key: 'ux', icon: '\u{1F3A8}', title: 'Generate UX Preview', desc: 'Telegram UX & Mermaid diagrams', confirm: false },
+  { key: 'usecases', icon: '\u{1F4CB}', title: 'Generate Use Cases', desc: 'Given / When / Then scenarios', confirm: false },
+  { key: 'requirements', icon: '\u{2699}\u{FE0F}', title: 'Generate Requirements', desc: 'Derive FR & NFR', confirm: false },
+  { key: 'tests', icon: '\u{1F9EA}', title: 'Generate Tests', desc: 'Unit, integration, e2e tests', confirm: false },
+  { key: 'code', icon: '\u{1F4BB}', title: 'Generate Code', desc: 'Backend & bot code generation', confirm: true },
+  { key: 'github', icon: '\u{1F680}', title: 'Push to GitHub', desc: 'Push generated code to repo', confirm: true },
+  { key: 'deploy', icon: '\u{26A1}', title: 'Deploy Locally', desc: 'Deploy backend & bot locally', confirm: true },
+  { key: 'traceability', icon: '\u{1F517}', title: 'Traceability', desc: 'Full traceability graph', confirm: false },
 ]
 
 export default function FeaturePage() {
@@ -50,8 +50,21 @@ export default function FeaturePage() {
 
   const markDone = (key: string) => setCompletedSteps(s => new Set(s).add(key))
 
+  if (!featureId) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">&#9888;</div>
+        <p className="empty-state-text">Feature not found. Please select a feature from the product page.</p>
+        <button className="btn btn-primary" style={{ marginTop: 24 }} onClick={() => navigate('/products')}>
+          Go to Products
+        </button>
+      </div>
+    )
+  }
+
   const handleAction = async (key: string) => {
-    if (!featureId) return
+    const action = ACTIONS.find(a => a.key === key)
+    if (action?.confirm && !confirm(`Are you sure you want to ${action.title.toLowerCase()}?`)) return
     setLoading(key)
     try {
       switch (key) {
@@ -63,7 +76,7 @@ export default function FeaturePage() {
           break
         }
         case 'stories': {
-          toast('Stories auto-approved from PRD generation.', 'info')
+          toast('Stories are auto-included in the PRD draft.', 'info')
           markDone('stories')
           break
         }
@@ -124,7 +137,8 @@ export default function FeaturePage() {
         }
       }
     } catch (e: unknown) {
-      toast(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error')
+      const actionName = ACTIONS.find(a => a.key === key)?.title || key
+      toast(`${actionName} failed: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error')
     } finally {
       setLoading(null)
     }
@@ -133,12 +147,12 @@ export default function FeaturePage() {
   return (
     <div>
       <a className="back-link" onClick={() => navigate(-1)} style={{ cursor: 'pointer', marginBottom: 16, display: 'inline-flex' }}>
-        &larr; Back
+        &larr; Back to Product
       </a>
 
       <div className="feature-header">
         <h1>Feature Pipeline</h1>
-        <span className="badge badge-purple" style={{ fontSize: 12 }}>{featureId?.slice(0, 8)}</span>
+        <span className="badge badge-purple" style={{ fontSize: 12 }}>{featureId.slice(0, 8)}...</span>
       </div>
 
       {/* Pipeline stepper */}
@@ -147,7 +161,8 @@ export default function FeaturePage() {
           <div
             key={s.key}
             className={`pipeline-step ${completedSteps.has(s.key) ? 'done' : ''} ${loading === s.key ? 'active' : ''}`}
-            onClick={() => handleAction(s.key)}
+            onClick={() => !loading && handleAction(s.key)}
+            style={loading ? { cursor: loading === s.key ? 'wait' : 'not-allowed' } : undefined}
           >
             {completedSteps.has(s.key) ? '\u2713 ' : ''}{s.label}
           </div>
@@ -159,17 +174,22 @@ export default function FeaturePage() {
         {ACTIONS.map(a => (
           <button
             key={a.key}
-            className="action-card"
+            className={`action-card ${completedSteps.has(a.key) ? 'done' : ''}`}
             onClick={() => handleAction(a.key)}
             disabled={loading !== null}
+            style={completedSteps.has(a.key) ? { borderColor: 'var(--success)' } : undefined}
           >
             <div className="action-icon">{a.icon}</div>
             <div className="action-title">{a.title}</div>
             <div className="action-desc">{a.desc}</div>
+            {a.confirm && <div style={{ fontSize: 10, color: 'var(--orange-light)', marginTop: 8 }}>Requires confirmation</div>}
             {loading === a.key && (
               <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center' }}>
                 <span className="spinner" />
               </div>
+            )}
+            {completedSteps.has(a.key) && loading !== a.key && (
+              <div style={{ marginTop: 8, fontSize: 11, color: 'var(--success)' }}>Done</div>
             )}
           </button>
         ))}
@@ -190,6 +210,7 @@ export default function FeaturePage() {
               {result.kind === 'deploy' && 'Deployment'}
               {result.kind === 'traceability' && 'Traceability Graph'}
             </h3>
+            <button className="btn btn-sm btn-ghost" onClick={() => setResult(null)}>Close</button>
           </div>
           <div className="result-body">
             {result.kind === 'prd' && (
@@ -207,45 +228,57 @@ export default function FeaturePage() {
               </div>
             )}
 
-            {result.kind === 'ux' && result.data.map((flow, i) => (
-              <div key={i} className="result-item">
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>
-                  {flow.title}
-                  <span className="result-item-type">{flow.flow_type}</span>
+            {result.kind === 'ux' && (result.data.length === 0
+              ? <p style={{ color: 'var(--text-muted)' }}>No UX flows generated.</p>
+              : result.data.map((flow, i) => (
+                <div key={i} className="result-item">
+                  <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                    {flow.title}
+                    <span className="result-item-type">{flow.flow_type}</span>
+                  </div>
+                  <pre className="result-code">{flow.content}</pre>
                 </div>
-                <pre className="result-code">{flow.content}</pre>
-              </div>
-            ))}
+              ))
+            )}
 
-            {result.kind === 'usecases' && result.data.map(uc => (
-              <div key={uc.id} className="result-item">
-                <span className="result-item-id">[{uc.use_case_id}]</span>
-                <strong>{uc.title}</strong>
-                <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-                  <div><strong>Given:</strong> {uc.given}</div>
-                  <div><strong>When:</strong> {uc.when}</div>
-                  <div><strong>Then:</strong> {uc.then}</div>
+            {result.kind === 'usecases' && (result.data.length === 0
+              ? <p style={{ color: 'var(--text-muted)' }}>No use cases generated.</p>
+              : result.data.map(uc => (
+                <div key={uc.id} className="result-item">
+                  <span className="result-item-id">[{uc.use_case_id}]</span>
+                  <strong>{uc.title}</strong>
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
+                    <div><strong>Given:</strong> {uc.given}</div>
+                    <div><strong>When:</strong> {uc.when}</div>
+                    <div><strong>Then:</strong> {uc.then}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
 
-            {result.kind === 'requirements' && result.data.map(r => (
-              <div key={r.id} className="result-item">
-                <span className="result-item-id">[{r.req_id}]</span>
-                <span className="result-item-type">({r.req_type})</span>
-                {' '}{r.title}
-                <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>{r.description}</div>
-              </div>
-            ))}
+            {result.kind === 'requirements' && (result.data.length === 0
+              ? <p style={{ color: 'var(--text-muted)' }}>No requirements generated.</p>
+              : result.data.map(r => (
+                <div key={r.id} className="result-item">
+                  <span className="result-item-id">[{r.req_id}]</span>
+                  <span className="result-item-type">({r.req_type})</span>
+                  {' '}{r.title}
+                  <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>{r.description}</div>
+                </div>
+              ))
+            )}
 
-            {result.kind === 'tests' && result.data.map(t => (
-              <div key={t.id} className="result-item">
-                <span className="result-item-id">[{t.test_id}]</span>
-                {t.title}
-                <span className="result-item-type">({t.test_type})</span>
-                <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>{t.description}</div>
-              </div>
-            ))}
+            {result.kind === 'tests' && (result.data.length === 0
+              ? <p style={{ color: 'var(--text-muted)' }}>No tests generated.</p>
+              : result.data.map(t => (
+                <div key={t.id} className="result-item">
+                  <span className="result-item-id">[{t.test_id}]</span>
+                  {t.title}
+                  <span className="result-item-type">({t.test_type})</span>
+                  <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-secondary)' }}>{t.description}</div>
+                </div>
+              ))
+            )}
 
             {result.kind === 'code' && (
               <div>

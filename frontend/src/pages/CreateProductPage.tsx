@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { createProduct, submitDiscovery } from '../api/client'
 import { useToast } from '../components/Toast'
 
@@ -10,11 +10,15 @@ interface ChatMessage {
 
 export default function CreateProductPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const toast = useToast()
-  const [step, setStep] = useState<'idea' | 'discovery' | 'done'>('idea')
+
+  // Restore productId from URL if page was refreshed after creation
+  const savedProductId = searchParams.get('productId')
+  const [step, setStep] = useState<'idea' | 'discovery' | 'done'>(savedProductId ? 'done' : 'idea')
   const [idea, setIdea] = useState('')
   const [loading, setLoading] = useState(false)
-  const [productId, setProductId] = useState<string | null>(null)
+  const [productId, setProductId] = useState<string | null>(savedProductId)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [questions, setQuestions] = useState<string[]>([])
   const [currentQ, setCurrentQ] = useState(0)
@@ -42,11 +46,13 @@ export default function CreateProductPage() {
         setStep('discovery')
         toast('Product draft created! Answer discovery questions.', 'success')
       } else {
+        // Persist productId in URL so refresh won't lose it
+        navigate(`/create?productId=${res.product.id}`, { replace: true })
         setStep('done')
         toast('Product created successfully!', 'success')
       }
     } catch (e: unknown) {
-      toast(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error')
+      toast(`Failed to create product: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error')
     } finally {
       setLoading(false)
     }
@@ -63,6 +69,7 @@ export default function CreateProductPage() {
 
       if (res.is_complete || res.follow_up_questions.length === 0) {
         setMessages(m => [...m, { role: 'system', text: 'Discovery complete! Your product is ready.' }])
+        navigate(`/create?productId=${productId}`, { replace: true })
         setStep('done')
         toast('Discovery complete!', 'success')
       } else {
@@ -71,7 +78,7 @@ export default function CreateProductPage() {
         setMessages(m => [...m, { role: 'system', text: res.follow_up_questions[0] }])
       }
     } catch (e: unknown) {
-      toast(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error')
+      toast(`Failed to submit answer: ${e instanceof Error ? e.message : 'Unknown error'}`, 'error')
     } finally {
       setLoading(false)
     }
@@ -84,19 +91,29 @@ export default function CreateProductPage() {
           <h1 className="page-title">Product Created</h1>
           <p className="page-subtitle">Your product is ready for feature map generation.</p>
         </div>
-        <div className="chat">
-          {messages.map((m, i) => (
-            <div key={i} className={`chat-bubble ${m.role}`}>{m.text}</div>
-          ))}
-          <div className="chat-bubble system">Discovery complete! Your product is ready.</div>
-        </div>
-        <div style={{ marginTop: 32, display: 'flex', gap: 12 }}>
-          <button className="btn btn-primary" onClick={() => navigate(`/products/${productId}`)}>
-            Go to Product
-          </button>
-          <button className="btn btn-secondary" onClick={() => navigate('/products')}>
-            My Products
-          </button>
+        {messages.length > 0 && (
+          <div className="chat" style={{ marginBottom: 32 }}>
+            {messages.map((m, i) => (
+              <div key={i} className={`chat-bubble ${m.role}`}>{m.text}</div>
+            ))}
+          </div>
+        )}
+        <div className="card" style={{ maxWidth: 500, padding: 32, textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>&#10003;</div>
+          <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Ready to go!</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
+            Next step: generate the feature map for your product.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            {productId && (
+              <button className="btn btn-primary" onClick={() => navigate(`/products/${productId}`)}>
+                Go to Product
+              </button>
+            )}
+            <button className="btn btn-secondary" onClick={() => navigate('/products')}>
+              My Products
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -119,12 +136,16 @@ export default function CreateProductPage() {
             <label className="form-label">Product Idea</label>
             <textarea
               className="textarea"
-              placeholder="Describe your product idea..."
+              placeholder="Example: A task management app for remote teams that integrates with Slack, supports time tracking, and provides weekly productivity reports..."
               value={idea}
               onChange={e => setIdea(e.target.value)}
               rows={6}
               disabled={loading}
+              autoFocus
             />
+            <div style={{ marginTop: 8, fontSize: 12, color: idea.trim().length < 10 ? 'var(--text-muted)' : 'var(--success)' }}>
+              {idea.trim().length}/10 characters minimum
+            </div>
           </div>
           <button
             className="btn btn-primary btn-lg"
@@ -152,11 +173,12 @@ export default function CreateProductPage() {
               placeholder="Type your answer..."
               value={answer}
               onChange={e => setAnswer(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSubmitAnswer()}
+              onKeyDown={e => e.key === 'Enter' && !loading && answer.trim() && handleSubmitAnswer()}
               disabled={loading}
+              autoFocus
             />
             <button className="btn btn-primary" onClick={handleSubmitAnswer} disabled={loading || !answer.trim()}>
-              Send
+              {loading ? <span className="spinner" /> : 'Send'}
             </button>
           </div>
         </div>
